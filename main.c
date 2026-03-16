@@ -12,6 +12,7 @@ typedef struct {
 
 typedef enum { EXECUTE_SUCCESS, EXECUTE_TABLE_FULL } ExecuteResult;
 
+//use enum result codes
 typedef enum {
   META_COMMAND_SUCCESS,
   META_COMMAND_UNRECOGNIZED_COMMAND
@@ -102,6 +103,7 @@ void free_table(Table* table) {
   free(table);
 }
 
+//function to free memory allocated for an instance of InputBuffer and buffer element of structure
 InputBuffer* new_input_buffer() {
   InputBuffer* input_buffer = (InputBuffer*)malloc(sizeof(InputBuffer));
   input_buffer->buffer = NULL;
@@ -111,17 +113,20 @@ InputBuffer* new_input_buffer() {
   return input_buffer;
 }
 
+//this function prints a prompt to the user
 void print_prompt() { printf("db > "); }
 
+//function to read input from cmd line
 void read_input(InputBuffer* input_buffer) {
   long long bytes_read =
       getline(&(input_buffer->buffer), &(input_buffer->buffer_length), stdin);
 
+  //if input is empty
   if (bytes_read <= 0) {
     printf("Error reading input\n");
     exit(EXIT_FAILURE);
   }
-  // Ignore trailing newline
+  //ignore trailing newline
   input_buffer->input_length = bytes_read - 1;
   input_buffer->buffer[bytes_read - 1] = 0;
 }
@@ -193,6 +198,11 @@ ExecuteResult execute_statement(Statement* statement, Table *table) {
   }
 }
 
+/*
+Sqlite starts a REPL (read-execute-print loop) when started from cmd line.
+The main function will have an infinite loop that prints the prompt,
+gets a line of input, then processes that line of input
+*/
 int main(int argc, char* argv[]) {
   Table* table = new_table();
   InputBuffer* input_buffer = new_input_buffer();
@@ -200,6 +210,10 @@ int main(int argc, char* argv[]) {
     print_prompt();
     read_input(input_buffer);
 
+    //parse and execute the command
+    //non-sql statements like .exit are called meta-commands
+    //they all start with a dot
+    //so check and handle them in seperate function
     if (input_buffer->buffer[0] == '.') {
       switch (do_meta_command(input_buffer, table)) {
         case (META_COMMAND_SUCCESS):
@@ -223,6 +237,7 @@ int main(int argc, char* argv[]) {
         continue;
     }
 
+    //this is like the VM
     switch (execute_statement(&statement, table)) {
 	case (EXECUTE_SUCCESS):
 	    printf("Executed.\n");
